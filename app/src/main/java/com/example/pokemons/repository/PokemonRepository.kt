@@ -27,5 +27,4 @@ class PokemonRepository @Inject constructor(private val api: PokemonApi) {
         }
         return Resource.Success(response)
     }
-
 }

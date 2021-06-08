@@ -12,6 +12,7 @@ import com.example.pokemons.data.models.PokemonListEntry
 import com.example.pokemons.repository.PokemonRepository
 import com.example.pokemons.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -27,8 +28,33 @@ class PokemonListViewModel @Inject constructor(private val repo: PokemonReposito
     var loadError = mutableStateOf("")
     var endReached = mutableStateOf(false)
 
+    private var cashedPokemonList = emptyList<PokemonListEntry>()
+    private var isSearchStarting = true
+    var isSearching = mutableStateOf(false)
+
     init {
         loadPokemonPaginated()
+    }
+
+    fun searchPokemonList(query: String) {
+        val listToSearch = if (isSearchStarting) pokemonList.value else cashedPokemonList
+        viewModelScope.launch(Dispatchers.Default) {
+            if (query.isEmpty()) {
+                pokemonList.value = cashedPokemonList
+                isSearching.value = false
+                isSearchStarting = true
+                return@launch
+            }
+            val result = listToSearch.filter {
+                it.name.contains(query.trim(), ignoreCase = true) || it.number.toString() == query
+            }
+            if (isSearchStarting) {
+                cashedPokemonList = pokemonList.value
+                isSearchStarting = false
+            }
+            pokemonList.value = result
+            isSearching.value = true
+        }
     }
 
     fun loadPokemonPaginated() {
@@ -43,8 +69,9 @@ class PokemonListViewModel @Inject constructor(private val repo: PokemonReposito
                         } else {
                             entry.url.takeLastWhile { it.isDigit() }
                         }
-                        val url = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${number}.png"
-                        PokemonListEntry(entry.name.capitalize(Locale.ROOT),url,number.toInt())
+                        val url =
+                            "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${number}.png"
+                        PokemonListEntry(entry.name.capitalize(Locale.ROOT), url, number.toInt())
                     }
                     curPage++
                     isLoading.value = false

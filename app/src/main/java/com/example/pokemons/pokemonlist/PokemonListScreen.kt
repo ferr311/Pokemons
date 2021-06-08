@@ -10,11 +10,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -35,14 +33,13 @@ import androidx.navigation.compose.navigate
 import coil.request.ImageRequest
 import com.example.pokemons.R
 import com.example.pokemons.data.models.PokemonListEntry
-import com.example.pokemons.ui.theme.Roboto
 import com.example.pokemons.ui.theme.RobotoCondensed
 import com.google.accompanist.coil.CoilImage
 
-
 @Composable
 fun PokemonListScreen(
-    navController: NavController
+    navController: NavController,
+    viewModel: PokemonListViewModel = hiltNavGraphViewModel()
 ) {
 
     Surface(
@@ -64,7 +61,7 @@ fun PokemonListScreen(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                //todo implement in viewmodel
+                viewModel.searchPokemonList(it)
             }
             Spacer(modifier = Modifier.height(16.dp))
             PokemonList(navController = navController)
@@ -100,7 +97,7 @@ fun SearchBar(
                 .shadow(5.dp, CircleShape)
                 .background(Color.White)
                 .padding(horizontal = 20.dp, vertical = 12.dp)
-                .onFocusChanged { isHintDisplayed = it != FocusState.Active }
+                .onFocusChanged { isHintDisplayed = it != FocusState.Active && text.isEmpty() }
         )
         if (isHintDisplayed) {
             Text(
@@ -121,6 +118,7 @@ fun PokemonList(
     val endReached by remember { viewModel.endReached }
     val isLoading by remember { viewModel.isLoading }
     val loadError by remember { viewModel.loadError }
+    val isSearching by remember { viewModel.isSearching }
 
     LazyColumn(contentPadding = PaddingValues(16.dp)) {
         val itemCount = if (pokemonList.size % 2 == 0) {
@@ -129,7 +127,7 @@ fun PokemonList(
             pokemonList.size / 2 + 1
         }
         items(itemCount) {
-            if (it >= itemCount - 1 && !endReached) {
+            if (it >= itemCount - 1 && !endReached && !isLoading && !isSearching) {
                 viewModel.loadPokemonPaginated()
             }
             PokemonRow(rowIndex = it, entries = pokemonList, navController = navController)

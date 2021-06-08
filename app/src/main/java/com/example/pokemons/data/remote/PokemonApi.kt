@@ -20,7 +20,7 @@ interface PokemonApi {
 
     @GET("pokemon/{name}")
     suspend fun getPokemonInfo(
-        @Path("mane") name: String
+        @Path("name") name: String
     ): Pokemon
 
 }
